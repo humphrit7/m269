@@ -11,7 +11,7 @@ class Marathon:
     
     def __init__(self):
         """Set up this marathon without any runners."""
-        self.entrants = []
+        self.entrants = set()
         self.completers = dict()
 
         
@@ -27,7 +27,7 @@ class Marathon:
         return False
 
     def finishers(self):
-        """Return the number of starting who finished the race so far."""
+        """Return the number of entrants who finished the race so far."""
         return len(self.completers)
 
     
@@ -57,11 +57,13 @@ class Marathon:
         if self.finished(runner):
             return self.completers[runner][1]
         else:
-            print("{0} has not finished the race".format(runner))
+            return "{0} has not finished the race".format(runner)
 
         
     def name(self, place):
         """Return the name of the runner finishing in the given place."""
+        if place > len(self.completers):
+            return "So far only {0} runners have finished".format(len(self.completers))
         for key in self.completers:
             if self.completers[key][1]==place:
                 return key
@@ -78,7 +80,9 @@ class Marathon:
     def register(self, runner):
         """Register the runner. Return nothing."""
         if not self.registered(runner):
-            self.entrants.append(runner)
+            self.entrants.add(runner)
+        else:
+            print("{0} is already registered".format(runner))
     
     # This modifier is called after the race starts and before it ends.
     def finish(self, runner, time):
@@ -88,6 +92,8 @@ class Marathon:
         """
         if self.registered(runner):
             self.completers[runner]=[time, len(self.completers)+1]
+        else:
+            print("{0} has not registered for this marathon".format(runner))
 
 
 # Tests
@@ -110,15 +116,27 @@ mk = Marathon()
 mk.register('jane')
 mk.register('john')
 mk.register('anne')
+mk.register('anne') # Testing that a runner can't be registered twice.
 
 mk.finish('anne', T3)
 mk.finish('jane', T3_30)
+mk.finish('peter', T4) # Testing that a runner who is not registered cannot finish the marathon
 
 check('finishers', mk.finishers(), 2)
 check('up to 4h', mk.finishers_up_to(T4), 2)
 check('up to 3h', mk.finishers_up_to(T3), 1)
+check('up to 1h', mk.finishers_up_to(T1), 0)
 check('gold', mk.name(1), 'anne')
 check('silver', mk.name(2), 'jane')
+check('name() test for failure', mk.name(10000), "So far only {0} runners have finished".format(len(mk.completers)))
 check('winning time', mk.time(1), T3)
+check('place of anne', mk.place('anne'), 1)
+check('place of john', mk.place('john'), "john has not finished the race")
+check('is jane registered', mk.registered('jane'), True)
+check('is abraham registered', mk.registered('abraham'), False)
+check('is anne finished', mk.finished('anne'), True)
+check('is disco stu finished', mk.finished('disco stu'), False)
+check('is john finished', mk.finished('john'), False)
+
 
 print('All tests have run.')
